@@ -44,7 +44,23 @@
         .editor-box { height: 200px; background: white; }
         
         /* 隐形登录点 */
-        .login-dot { position: fixed; bottom: 5px; right: 5px; width: 30px; height: 30px; z-index: 999; cursor: default; }
+       .login-dot { 
+    position: fixed; 
+    bottom: 10px; 
+    right: 10px; 
+    padding: 5px 10px;
+    background: #eee; /* 灰色背景 */
+    color: #999;      /* 灰色文字 */
+    font-size: 12px;
+    border-radius: 4px;
+    cursor: pointer; 
+    z-index: 999; 
+    opacity: 0.5;     /* 半透明 */
+}
+.login-dot:hover {
+    opacity: 1;       /* 鼠标放上去变清楚 */
+    background: #ddd;
+}
     </style>
 </head>
 <body>
@@ -100,7 +116,7 @@
 </div>
 
 <!-- 隐形按钮 -->
-<div class="login-dot" onclick="adminLogin()"></div>
+<div class="login-dot" onclick="adminLogin()">老师登录</div>
 
 <!-- 引入脚本库 -->
 <script src="https://cdn.bootcdn.net/ajax/libs/quill/1.3.6/quill.min.js"></script>
