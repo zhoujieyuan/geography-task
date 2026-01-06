@@ -3,195 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>每日地理早读任务</title>
+    <title>每日地理早读</title>
+    <!-- 引入国内最快的 Quill 编辑器资源 -->
     <link href="https://cdn.bootcdn.net/ajax/libs/quill/1.3.6/quill.snow.min.css" rel="stylesheet">
     <style>
-        /* --- 样式保持不变 --- */
-        :root { var(--primary-color: #2c3e50; var(--accent-color: #3498db; var(--bg-color: #f0f2f5; var(--btn-hover: #2980b9; }
-        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; color: #333; }
-        .container { max-width: 800px; margin: 20px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.08); position: relative; }
-        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
-        #current-date { font-size: 1.2em; color: #666; }
-        #current-time { font-size: 2.8em; font-weight: bold; color: #2c3e50; letter-spacing: 2px; font-variant-numeric: tabular-nums; }
-        .page { display: none; animation: fadeIn 0.5s; }
+        /* 全局样式初始化 */
+        body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        /* 顶部时间 */
+        .header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
+        #current-date { font-size: 1.1em; color: #7f8c8d; margin-bottom: 5px; }
+        #current-time { font-size: 2.5em; font-weight: bold; color: #2c3e50; font-family: monospace; }
+
+        /* 页面切换逻辑 */
+        .page { display: none; animation: fadeIn 0.4s; }
         .page.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .content-box { min-height: 300px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background: #fff; margin-bottom: 20px; }
-        .nav-btn { display: block; width: 100%; padding: 15px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; margin-top: 20px; }
-        .nav-btn:hover { background-color: #2980b9; }
-        .nav-btn.secondary { background-color: #95a5a6; }
-        .lock-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; background-color: #fff8e1; color: #d35400; border-radius: 8px; border: 2px dashed #f39c12; }
-        #admin-panel { display: none; margin-top: 50px; border-top: 4px solid #3498db; padding-top: 20px; background: #fafafa; }
-        .editor-container { background: white; height: 250px; margin-bottom: 20px; }
-        .admin-bar { background: #e1e8ed; padding: 15px; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-        .login-trigger { position: fixed; bottom: 10px; right: 10px; width: 40px; height: 40px; background: rgba(0,0,0,0.1); border-radius: 50%; cursor: pointer; z-index: 999; }
-        /* 加载动画 */
-        #loading-mask { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.8); z-index:9999; display:flex; justify-content:center; align-items:center; font-size:1.5em; color:#3498db; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 内容框样式 */
+        .content-display { min-height: 200px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fff; }
+        .ql-editor { padding: 0; } /* 修正编辑器内边距 */
+
+        /* 按钮样式 */
+        .btn { display: block; width: 100%; padding: 15px; margin-top: 20px; background-color: #3498db; color: white; border: none; border-radius: 8px; font-size: 1.1em; cursor: pointer; transition: 0.3s; }
+        .btn:hover { background-color: #2980b9; }
+        .btn-secondary { background-color: #95a5a6; }
+        .btn-secondary:hover { background-color: #7f8c8d; }
+
+        /* 默写锁定样式 */
+        .lock-box { background: #fff3cd; color: #856404; padding: 40px; text-align: center; border-radius: 8px; border: 2px dashed #ffeeba; }
+
+        /* --- 教师后台 (关键：强制隐藏，防止学生看到) --- */
+        #admin-panel { 
+            display: none !important; /* 加上 !important 确保默认绝对隐藏 */
+            margin-top: 60px; padding-top: 20px; border-top: 5px solid #3498db; background: #fcfcfc; 
+        }
+
+        /* 编辑器高度 */
+        .editor-box { height: 200px; background: white; }
+        
+        /* 隐形登录点 */
+        .login-dot { position: fixed; bottom: 5px; right: 5px; width: 30px; height: 30px; z-index: 999; cursor: default; }
     </style>
 </head>
 <body>
 
-<div id="loading-mask">正在连接云端数据...</div>
-
 <div class="container">
+    <!-- 1. 时间显示 -->
     <div class="header">
-        <div id="current-date">正在获取日期...</div>
+        <div id="current-date">正在加载日期...</div>
         <div id="current-time">00:00:00</div>
     </div>
 
-    <!-- 早读页 -->
-    <div id="page-reading" class="page active">
-        <h2 style="color: #2c3e50;">📖 今日早读任务</h2>
-        <div id="display-reading" class="content-box ql-editor"></div>
-        <button class="nav-btn" onclick="goToPage('dictation')">完成早读，进入默写检测 →</button>
+    <!-- 2. 学生看的第一页：早读 -->
+    <div id="page-read" class="page active">
+        <h2 style="color:#2c3e50">📖 今日早读任务</h2>
+        <div id="view-reading" class="content-display ql-editor">
+            <p style="text-align:center; color:#999; margin-top:50px;">正在连接云端获取任务...</p>
+        </div>
+        <button class="btn" onclick="switchPage('write')">完成早读，进入默写检测 →</button>
     </div>
 
-    <!-- 默写页 -->
-    <div id="page-dictation" class="page">
-        <h2 style="color: #c0392b;">✍️ 默写检测</h2>
-        <div id="dictation-lock" class="lock-screen">
-            <div style="font-size: 3em;">🔒</div>
-            <p>默写将在 <span id="lock-time-text" style="font-weight:bold; font-size:1.2em">--:--</span> 开启</p>
+    <!-- 3. 学生看的第二页：默写 -->
+    <div id="page-write" class="page">
+        <h2 style="color:#c0392b">✍️ 默写检测</h2>
+        
+        <!-- 锁定状态 -->
+        <div id="lock-msg" class="lock-box">
+            <div style="font-size:2em; margin-bottom:10px;">🔒</div>
+            默写将在 <strong id="unlock-time-display">--:--</strong> 开启
         </div>
-        <div id="dictation-content-wrapper" style="display:none;">
-            <div id="display-dictation" class="content-box ql-editor"></div>
-        </div>
-        <button class="nav-btn secondary" onclick="goToPage('reading')">← 返回早读任务</button>
+
+        <!-- 解锁状态 -->
+        <div id="view-writing" class="content-display ql-editor" style="display:none;"></div>
+
+        <button class="btn btn-secondary" onclick="switchPage('read')">← 返回早读任务</button>
     </div>
 
-    <!-- 老师后台 -->
+    <!-- 4. 老师后台 (默认看不见) -->
     <div id="admin-panel">
-        <h2 style="border-bottom:1px solid #ddd;">🔧 老师发布后台</h2>
-        <h4>1. 早读内容：</h4> <div id="editor-reading" class="editor-container"></div>
-        <h4>2. 默写内容：</h4> <div id="editor-dictation" class="editor-container"></div>
-        <div class="admin-bar">
-            <div><label>⏰ 默写时间：</label><input type="time" id="time-setter" style="padding:5px;"></div>
-            <button class="nav-btn" style="width: auto; margin:0; background: green;" onclick="saveDataToCloud()">☁️ 发布到云端</button>
+        <h3>🔧 老师发布后台</h3>
+        <p><strong>早读内容：</strong></p>
+        <div id="edit-reading" class="editor-box"></div>
+        
+        <p style="margin-top:50px;"><strong>默写内容：</strong></p>
+        <div id="edit-writing" class="editor-box"></div>
+        
+        <div style="margin-top:20px; padding:15px; background:#e8f4fc; border-radius:5px;">
+            <label>⏰ 默写开启时间：</label>
+            <input type="time" id="time-input" style="padding:5px; font-size:1.1em;">
+            <button class="btn" style="background:#27ae60; margin-top:10px;" onclick="publishData()">☁️ 立即发布到云端</button>
         </div>
     </div>
+
 </div>
 
-<div class="login-trigger" onclick="teacherLogin()"></div>
+<!-- 隐形按钮 -->
+<div class="login-dot" onclick="adminLogin()"></div>
 
-<!-- 引入库文件 -->
+<!-- 引入脚本库 -->
 <script src="https://cdn.bootcdn.net/ajax/libs/quill/1.3.6/quill.min.js"></script>
 <script src="//code.bdstatic.com/npm/leancloud-storage@4.12.0/dist/av-min.js"></script>
 
 <script>
-    // ==========================================
-    // ⚠️⚠️ 请在这里填写你的 LeanCloud 密钥 ⚠️⚠️
-    // ==========================================
-    const APP_ID = 'w4PssPZqhegZCxoLoGXTN5DV-MdYXbMMI'; 
-    const APP_KEY = 'tgdpr2Q2lVc8Fd9ETBEOVcwV';
-    // ==========================================
+    // ============================================================
+    // ⬇️⬇️⬇️ 请在这里填入你【第二阶段】获取的新密钥 ⬇️⬇️⬇️
+    // ============================================================
+    const APP_ID  = 'HLrQMs565wIqaIvFLCWezXKI-MdYXbMMI';
+    const APP_KEY = 'UpLSsS0moovxKPRy4om5uOiT';
+    const SERVER  = 'https://hlrqms56.api.lncldglobal.com'; // 注意：必须是 https:// 开头
+    // ============================================================
 
-    // 1. 初始化云数据库
-    AV.init({ appId: APP_ID, appKey: APP_KEY, serverURL: "https://w4psspzq.api.lncldglobal.com" });
+    // 1. 初始化云端
+    AV.init({ appId: APP_ID, appKey: APP_KEY, serverURL: SERVER });
 
-    // 2. 基础逻辑
+    // 2. 页面加载逻辑
+    let quillR, quillW;
+    window.onload = function() {
+        // 初始化编辑器
+        var tools = [[{ 'header': [1, 2, false] }], ['bold', 'italic', { 'color': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }]];
+        quillR = new Quill('#edit-reading', { theme: 'snow', modules: { toolbar: tools } });
+        quillW = new Quill('#edit-writing', { theme: 'snow', modules: { toolbar: tools } });
+
+        // 启动时钟
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // 拉取云端数据
+        fetchData();
+    };
+
+    // 3. 拉取数据 (读)
+    function fetchData() {
+        const query = new AV.Query('TaskData');
+        query.descending('createdAt'); // 获取最新的一条
+        query.first().then((data) => {
+            if (data) {
+                const attr = data.attributes;
+                // 更新学生看的地方
+                document.getElementById('view-reading').innerHTML = attr.reading;
+                document.getElementById('view-writing').innerHTML = attr.writing;
+                document.getElementById('unlock-time-display').innerText = attr.unlockTime;
+                
+                // 更新老师看的地方 (方便修改)
+                quillR.root.innerHTML = attr.reading;
+                quillW.root.innerHTML = attr.writing;
+                document.getElementById('time-input').value = attr.unlockTime;
+
+                // 检查是否解锁
+                checkLock();
+            } else {
+                document.getElementById('view-reading').innerHTML = "<p style='text-align:center'>暂无发布任务</p>";
+            }
+        }, (error) => {
+            console.error(error);
+            // 如果出错，只在控制台显示，不弹窗打扰学生，除非是严重配置错误
+            if(error.code === 403) alert("⚠️ 权限错误：请检查 LeanCloud 白名单设置！");
+        });
+    }
+
+    // 4. 发布数据 (写)
+    function publishData() {
+        const TaskData = AV.Object.extend('TaskData');
+        const task = new TaskData();
+        
+        const r_html = quillR.root.innerHTML;
+        const w_html = quillW.root.innerHTML;
+        const time   = document.getElementById('time-input').value;
+
+        if(!time) { alert("请设置一个默写开启时间！"); return; }
+
+        task.set('reading', r_html);
+        task.set('writing', w_html);
+        task.set('unlockTime', time);
+
+        const btn = document.querySelector('button[onclick="publishData()"]');
+        btn.innerText = "正在发送...";
+        
+        task.save().then(() => {
+            alert("✅ 发布成功！\n\n请去另一台电脑刷新查看效果。");
+            btn.innerText = "☁️ 立即发布到云端";
+            window.location.reload(); // 刷新页面确认效果
+        }, (error) => {
+            alert("❌ 发布失败: " + error.message);
+            btn.innerText = "☁️ 立即发布到云端";
+        });
+    }
+
+    // 5. 其他逻辑
     function updateClock() {
         const now = new Date();
         document.getElementById('current-date').innerText = now.toLocaleDateString('zh-CN', {month:'long', day:'numeric', weekday:'long'});
         document.getElementById('current-time').innerText = now.toLocaleTimeString('zh-CN', {hour12:false});
-        checkLockStatus();
-    }
-    setInterval(updateClock, 1000); updateClock();
-
-    function goToPage(page) {
-        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
-        document.getElementById('page-' + page).classList.add('active');
+        checkLock();
     }
 
-    // 3. 编辑器初始化
-    let quillRead, quillWrite;
-    const toolbarOptions = [[{ 'header': [1, 2, false] }], ['bold', 'italic', { 'color': [] }], [{ 'list': 'ordered'}, { 'list': 'bullet' }]];
+    function checkLock() {
+        const setTime = document.getElementById('unlock-time-display').innerText;
+        if (!setTime || setTime.includes('--')) return;
 
-    window.onload = function() {
-        quillRead = new Quill('#editor-reading', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        quillWrite = new Quill('#editor-dictation', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-        
-        // 页面加载完成后，立刻从云端拉取数据
-        loadDataFromCloud();
-    };
-
-    // 4. 【核心】从云端读取数据
-    function loadDataFromCloud() {
-        const query = new AV.Query('GeoClass');
-        query.descending('createdAt'); // 获取最新创建的一条
-        query.first().then((todo) => {
-            document.getElementById('loading-mask').style.display = 'none'; // 隐藏加载层
-            if (todo) {
-                const data = todo.attributes;
-                // 更新学生视图
-                document.getElementById('display-reading').innerHTML = data.reading || "暂无任务";
-                document.getElementById('display-dictation').innerHTML = data.dictation || "";
-                document.getElementById('lock-time-text').innerText = data.unlockTime || "未定";
-                document.getElementById('time-setter').value = data.unlockTime || "";
-                
-                // 更新老师编辑器
-                quillRead.root.innerHTML = data.reading || "";
-                quillWrite.root.innerHTML = data.dictation || "";
-                
-                checkLockStatus();
-            }
-        }, (error) => {
-            alert("读取失败，请检查网络或密钥：" + error.message);
-        });
-    }
-
-    // 5. 【核心】保存数据到云端
-    function saveDataToCloud() {
-        const GeoClass = AV.Object.extend('GeoClass');
-        const task = new GeoClass();
-        
-        task.set('reading', quillRead.root.innerHTML);
-        task.set('dictation', quillWrite.root.innerHTML);
-        task.set('unlockTime', document.getElementById('time-setter').value);
-
-        const btn = document.querySelector('.admin-bar button');
-        btn.innerText = "正在发布...";
-        btn.disabled = true;
-
-        task.save().then((todo) => {
-            alert('✅ 发布成功！学生刷新页面即可看到。');
-            btn.innerText = "☁️ 发布到云端";
-            btn.disabled = false;
-            loadDataFromCloud(); // 重新拉取确认
-        }, (error) => {
-            alert('发布失败：' + error.message);
-            btn.innerText = "☁️ 发布到云端";
-            btn.disabled = false;
-        });
-    }
-
-    // 6. 锁定逻辑
-    function checkLockStatus() {
-        const unlockTime = document.getElementById('lock-time-text').innerText;
-        if (unlockTime === "未定" || unlockTime === "--:--") return;
-        
         const now = new Date();
-        const cur = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
-        
-        if (cur >= unlockTime) {
-            document.getElementById('dictation-lock').style.display = 'none';
-            document.getElementById('dictation-content-wrapper').style.display = 'block';
+        const curTime = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+
+        if (curTime >= setTime) {
+            document.getElementById('lock-msg').style.display = 'none';
+            document.getElementById('view-writing').style.display = 'block';
         } else {
-            document.getElementById('dictation-lock').style.display = 'flex';
-            document.getElementById('dictation-content-wrapper').style.display = 'none';
+            document.getElementById('lock-msg').style.display = 'block';
+            document.getElementById('view-writing').style.display = 'none';
         }
     }
 
-    // 7. 登录
-    function teacherLogin() {
-        if(prompt("密码") === "8888") {
-            document.getElementById('admin-panel').style.display = 'block';
-            setTimeout(()=>document.getElementById('admin-panel').scrollIntoView({behavior:"smooth"}),100);
+    function switchPage(pageName) {
+        document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
+        document.getElementById('page-' + pageName).classList.add('active');
+    }
+
+    function adminLogin() {
+        const pwd = prompt("请输入老师密码：");
+        if (pwd === "8888") {
+            // 只有密码正确，才强制显示后台
+            document.getElementById('admin-panel').style.setProperty('display', 'block', 'important');
+            // 自动滚到底部
+            setTimeout(() => window.scrollTo(0, document.body.scrollHeight), 100);
         }
     }
 </script>
 </body>
-
 </html>
-
-
-
