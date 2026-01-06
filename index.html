@@ -116,7 +116,7 @@
 
     // 4. 【核心】从云端读取数据
     function loadDataFromCloud() {
-        const query = new AV.Query('TaskData');
+        const query = new AV.Query('GeoClass');
         query.descending('createdAt'); // 获取最新创建的一条
         query.first().then((todo) => {
             document.getElementById('loading-mask').style.display = 'none'; // 隐藏加载层
@@ -141,8 +141,8 @@
 
     // 5. 【核心】保存数据到云端
     function saveDataToCloud() {
-        const TaskData = AV.Object.extend('TaskData');
-        const task = new TaskData();
+        const GeoClass = AV.Object.extend('GeoClass');
+        const task = new GeoClass();
         
         task.set('reading', quillRead.root.innerHTML);
         task.set('dictation', quillWrite.root.innerHTML);
@@ -192,5 +192,6 @@
 </body>
 
 </html>
+
 
 
